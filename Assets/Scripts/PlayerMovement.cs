@@ -27,10 +27,10 @@ public class PlayerMovement : MonoBehaviour
         Debug.Log("PlayerMovement enabled: " + enabled);
 
         // Disable Rigidbody gravity (we'll handle grounding manually)
-        rb.useGravity = false;
+        //rb.useGravity = false;
 
         // Initial ground alignment
-        AlignToGround();
+        //AlignToGround();
 
         // Initialize VR controllers
         InitializeControllers();
@@ -50,7 +50,7 @@ public class PlayerMovement : MonoBehaviour
         Debug.Log("FixedUpdate running. Time.timeScale: " + Time.timeScale);
 
         // Keep the excavator on the ground using a raycast
-        AlignToGround();
+        //AlignToGround();
 
         // VR Controls
         if (XRGeneralSettings.Instance.Manager.isInitializationComplete)
@@ -76,11 +76,7 @@ public class PlayerMovement : MonoBehaviour
                     rb.velocity = new Vector3(backwardVelocity.x, 0, backwardVelocity.z);
                 }
             }
-            if (!aButton && !bButton)
-            {
-                rb.velocity = new Vector3(0, 0, 0);
-            }
-
+        
             // Left controller: X (rotate left), Y (rotate right)
             if (leftController.TryGetFeatureValue(CommonUsages.primaryButton, out bool xButton))
             {
