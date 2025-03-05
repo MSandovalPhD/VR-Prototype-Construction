@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR;
+using UnityEngine.XR.Management;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -17,6 +18,7 @@ public class PlayerMovement : MonoBehaviour
     // VR input devices
     private InputDevice rightController;
     private InputDevice leftController;
+    private bool controllersInitialized = false;
 
     void Start()
     {
@@ -24,22 +26,22 @@ public class PlayerMovement : MonoBehaviour
         enabled = true;
         Debug.Log("PlayerMovement enabled: " + enabled);
 
-        // Initialize VR controllers if in VR mode
-        if (UnityEngine.XR.XRSettings.enabled)
-        {
-            var rightHandDevices = new List<InputDevice>();
-            InputDevices.GetDevicesWithCharacteristics(InputDeviceCharacteristics.Right | InputDeviceCharacteristics.Controller, rightHandDevices);
-            if (rightHandDevices.Count > 0)
-            {
-                rightController = rightHandDevices[0];
-            }
+        // Disable Rigidbody gravity (we'll handle grounding manually)
+        rb.useGravity = false;
 
-            var leftHandDevices = new List<InputDevice>();
-            InputDevices.GetDevicesWithCharacteristics(InputDeviceCharacteristics.Left | InputDeviceCharacteristics.Controller, leftHandDevices);
-            if (leftHandDevices.Count > 0)
-            {
-                leftController = leftHandDevices[0];
-            }
+        // Initial ground alignment
+        AlignToGround();
+
+        // Initialize VR controllers
+        InitializeControllers();
+    }
+
+    void Update()
+    {
+        // Reattempt controller initialization if not yet initialized
+        if (!controllersInitialized)
+        {
+            InitializeControllers();
         }
     }
 
@@ -48,83 +50,55 @@ public class PlayerMovement : MonoBehaviour
         Debug.Log("FixedUpdate running. Time.timeScale: " + Time.timeScale);
 
         // Keep the excavator on the ground using a raycast
-        if (Physics.Raycast(transform.position + Vector3.up * 1f, Vector3.down, out RaycastHit hit, 2f))
-        {
-            transform.position = new Vector3(transform.position.x, hit.point.y, transform.position.z);
-        }
+        AlignToGround();
 
         // VR Controls
-        if (UnityEngine.XR.XRSettings.enabled)
+        if (XRGeneralSettings.Instance.Manager.isInitializationComplete)
         {
-            // Right controller joystick for movement (forward/backward)
-            if (rightController.TryGetFeatureValue(CommonUsages.primary2DAxis, out Vector2 rightJoystick))
+            // Right controller: A (forward), B (backward)
+            if (rightController.TryGetFeatureValue(CommonUsages.primaryButton, out bool aButton))
             {
-                if (rightJoystick.y > 0.2f) // Forward
+                Debug.Log("A Button State: " + aButton);
+                if (aButton)
                 {
-                    Debug.Log("VR Right Joystick: Moving forward at speed: " + forwardSpeed);
+                    Debug.Log("VR Right Controller A Button: Moving forward at speed: " + forwardSpeed);
                     Vector3 forwardVelocity = transform.forward * forwardSpeed;
-                    rb.velocity = new Vector3(forwardVelocity.x, rb.velocity.y, forwardVelocity.z);
-                }
-                else if (rightJoystick.y < -0.2f) // Backward
-                {
-                    Debug.Log("VR Right Joystick: Moving backward at speed: " + -forwardSpeed);
-                    Vector3 backwardVelocity = -transform.forward * forwardSpeed;
-                    rb.velocity = new Vector3(backwardVelocity.x, rb.velocity.y, backwardVelocity.z);
-                }
-                else
-                {
-                    rb.velocity = new Vector3(0, rb.velocity.y, 0);
+                    rb.velocity = new Vector3(forwardVelocity.x, 0, forwardVelocity.z);
                 }
             }
-
-            // Left controller joystick for rotation (left/right)
-            if (leftController.TryGetFeatureValue(CommonUsages.primary2DAxis, out Vector2 leftJoystick))
+            if (rightController.TryGetFeatureValue(CommonUsages.secondaryButton, out bool bButton))
             {
-                if (leftJoystick.x < -0.2f) // Rotate left
+                Debug.Log("B Button State: " + bButton);
+                if (bButton)
                 {
-                    Debug.Log("VR Left Joystick: Rotating left.");
+                    Debug.Log("VR Right Controller B Button: Moving backward at speed: " + -forwardSpeed);
+                    Vector3 backwardVelocity = -transform.forward * forwardSpeed;
+                    rb.velocity = new Vector3(backwardVelocity.x, 0, backwardVelocity.z);
+                }
+            }
+            if (!aButton && !bButton)
+            {
+                rb.velocity = new Vector3(0, 0, 0);
+            }
+
+            // Left controller: X (rotate left), Y (rotate right)
+            if (leftController.TryGetFeatureValue(CommonUsages.primaryButton, out bool xButton))
+            {
+                Debug.Log("X Button State: " + xButton);
+                if (xButton)
+                {
+                    Debug.Log("VR Left Controller X Button: Rotating left.");
                     transform.Rotate(0, -rotationSpeed * Time.fixedDeltaTime, 0);
                 }
-                else if (leftJoystick.x > 0.2f) // Rotate right
+            }
+            if (leftController.TryGetFeatureValue(CommonUsages.secondaryButton, out bool yButton))
+            {
+                Debug.Log("Y Button State: " + yButton);
+                if (yButton)
                 {
-                    Debug.Log("VR Left Joystick: Rotating right.");
+                    Debug.Log("VR Left Controller Y Button: Rotating right.");
                     transform.Rotate(0, rotationSpeed * Time.fixedDeltaTime, 0);
                 }
-            }
-        }
-        else // Non-VR Controls
-        {
-            // Swerve left with A key (rotate counterclockwise around Y axis)
-            if (Input.GetKey(KeyCode.A))
-            {
-                Debug.Log("A key pressed. Rotating left.");
-                transform.Rotate(0, -rotationSpeed * Time.fixedDeltaTime, 0);
-            }
-            // Swerve right with B key (rotate clockwise around Y axis)
-            else if (Input.GetKey(KeyCode.B))
-            {
-                Debug.Log("B key pressed. Rotating right.");
-                transform.Rotate(0, rotationSpeed * Time.fixedDeltaTime, 0);
-            }
-
-            // Move forward with X key (in the direction the excavator is facing)
-            if (Input.GetKey(KeyCode.X))
-            {
-                Debug.Log("X key pressed. Moving forward at speed: " + forwardSpeed);
-                Vector3 forwardVelocity = transform.forward * forwardSpeed;
-                rb.velocity = new Vector3(forwardVelocity.x, rb.velocity.y, forwardVelocity.z);
-            }
-            // Move backward with Y key (in the opposite direction the excavator is facing)
-            else if (Input.GetKey(KeyCode.Y))
-            {
-                Debug.Log("Y key pressed. Moving backward at speed: " + -forwardSpeed);
-                Vector3 backwardVelocity = -transform.forward * forwardSpeed;
-                rb.velocity = new Vector3(backwardVelocity.x, rb.velocity.y, backwardVelocity.z);
-            }
-            // Stop horizontal movement when neither X nor Y is pressed
-            else
-            {
-                rb.velocity = new Vector3(0, rb.velocity.y, 0);
             }
         }
 
@@ -143,6 +117,57 @@ public class PlayerMovement : MonoBehaviour
             {
                 Debug.LogError("GameManager not found! Cannot end game.");
             }
+        }
+    }
+
+    void InitializeControllers()
+    {
+        var rightHandDevices = new List<InputDevice>();
+        InputDevices.GetDevicesWithCharacteristics(InputDeviceCharacteristics.Right | InputDeviceCharacteristics.Controller, rightHandDevices);
+        if (rightHandDevices.Count > 0)
+        {
+            rightController = rightHandDevices[0];
+            Debug.Log("Right controller detected: " + rightController.name);
+            controllersInitialized = true;
+        }
+        else
+        {
+            Debug.LogWarning("Right controller not detected!");
+        }
+
+        var leftHandDevices = new List<InputDevice>();
+        InputDevices.GetDevicesWithCharacteristics(InputDeviceCharacteristics.Left | InputDeviceCharacteristics.Controller, leftHandDevices);
+        if (leftHandDevices.Count > 0)
+        {
+            leftController = leftHandDevices[0];
+            Debug.Log("Left controller detected: " + leftController.name);
+            controllersInitialized = true;
+        }
+        else
+        {
+            Debug.LogWarning("Left controller not detected!");
+        }
+    }
+
+    void AlignToGround()
+    {
+        // Cast a ray downward from a very high position to ensure it hits the ground
+        Vector3 raycastOrigin = transform.position + Vector3.up * 1000f; // Start 1000 units above
+        if (Physics.Raycast(raycastOrigin, Vector3.down, out RaycastHit hit, 2000f))
+        {
+            Vector3 newPosition = transform.position;
+            newPosition.y = hit.point.y;
+            transform.position = newPosition;
+            rb.velocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
+            Debug.Log("Excavator aligned to ground at Y: " + newPosition.y);
+        }
+        else
+        {
+            Debug.LogWarning("Raycast did not hit the ground! Forcing excavator to Y: 0.");
+            Vector3 newPosition = transform.position;
+            newPosition.y = 0; // Force to Y: 0 if raycast fails
+            transform.position = newPosition;
+            rb.velocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
         }
     }
 }
