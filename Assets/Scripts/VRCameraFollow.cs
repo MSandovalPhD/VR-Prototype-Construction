@@ -11,9 +11,7 @@ public class VRCameraFollow : MonoBehaviour
         {
             Vector3 targetPosition = target.position + offset;
             transform.position = new Vector3(targetPosition.x, targetPosition.y, targetPosition.z);
-            
-            Quaternion targetRotation = Quaternion.Euler(0, target.rotation.eulerAngles.y, 0);
-            transform.rotation = targetRotation;
+            transform.rotation = Quaternion.Euler(10f, transform.eulerAngles.y, 0);
         }
     }
 }

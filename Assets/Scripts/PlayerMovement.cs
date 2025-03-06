@@ -8,17 +8,18 @@ public class PlayerMovement : MonoBehaviour
     public Rigidbody rb;
     public float forwardSpeed = 2f;    // Speed for forward/backward movement (meters per second)
     public float rotationSpeed = 100f; // Speed of rotation/swerving (degrees per second)
-
-    // Ground bounds (adjust based on your ground's size and position)
-    private float groundMinX = -50f;   // Ground extends from X: -50 to 50
+    public Transform vrCamera;
+    public float headRotationSpeed = 50f;
+    private float groundMinX = -50f;
     private float groundMaxX = 50f;
-    private float groundMinZ = -50f;   // Ground extends from Z: -50 to 50
+    private float groundMinZ = -50f;
     private float groundMaxZ = 50f;
 
     // VR input devices
     private InputDevice rightController;
     private InputDevice leftController;
     private bool controllersInitialized = false;
+    private bool isBraking = false;
 
     void Start()
     {
@@ -35,7 +36,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-         if (!controllersInitialized)
+        if (!controllersInitialized)
         {
             InitializeControllers();
         }
@@ -45,51 +46,78 @@ public class PlayerMovement : MonoBehaviour
     {
         Debug.Log("FixedUpdate running. Time.timeScale: " + Time.timeScale);
 
-        // Keep the excavator on the ground using a raycast
-        //AlignToGround();
-
         // VR Controls
         if (XRGeneralSettings.Instance.Manager.isInitializationComplete)
         {
-            // Right controller: A (forward), B (backward)
-            if (rightController.TryGetFeatureValue(CommonUsages.primaryButton, out bool aButton))
+            if (rightController.isValid)
             {
-                Debug.Log("A Button State: " + aButton);
-                if (aButton)
+                if (rightController.TryGetFeatureValue(CommonUsages.primaryButton, out bool aButton))
                 {
-                    Debug.Log("VR Right Controller A Button: Moving forward at speed: " + forwardSpeed);
-                    Vector3 forwardVelocity = transform.forward * forwardSpeed;
-                    rb.velocity = new Vector3(forwardVelocity.x, 0, forwardVelocity.z);
+                    Debug.Log("A Button State (Brake): " + aButton);
+                    isBraking = aButton;
+                }
+
+                if (rightController.TryGetFeatureValue(CommonUsages.primary2DAxis, out Vector2 rightJoystick))
+                {
+                    Debug.Log("Right Joystick X: " + rightJoystick.x);
+                    if (!isBraking)
+                    {
+                        if (rightJoystick.x < -0.2f) // Rotate left
+                        {
+                            Debug.Log("VR Right Joystick: Rotating left.");
+                            transform.Rotate(0, -rotationSpeed * Time.fixedDeltaTime, 0);
+                        }
+                        else if (rightJoystick.x > 0.2f) // Rotate right
+                        {
+                            Debug.Log("VR Right Joystick: Rotating right.");
+                            transform.Rotate(0, rotationSpeed * Time.fixedDeltaTime, 0);
+                        }
+                    }
                 }
             }
-            if (rightController.TryGetFeatureValue(CommonUsages.secondaryButton, out bool bButton))
+
+            if (leftController.isValid)
             {
-                Debug.Log("B Button State: " + bButton);
-                if (bButton)
+                if (leftController.TryGetFeatureValue(CommonUsages.primary2DAxis, out Vector2 leftJoystick))
                 {
-                    Debug.Log("VR Right Controller B Button: Moving backward at speed: " + -forwardSpeed);
-                    Vector3 backwardVelocity = -transform.forward * forwardSpeed;
-                    rb.velocity = new Vector3(backwardVelocity.x, 0, backwardVelocity.z);
+                    Debug.Log("Left Joystick Y: " + leftJoystick.y);
+                    if (!isBraking)
+                    {
+                        if (leftJoystick.y > 0.2f) // Forward
+                        {
+                            Debug.Log("VR Left Joystick: Moving forward at speed: " + forwardSpeed);
+                            Vector3 forwardVelocity = transform.forward * forwardSpeed;
+                            rb.velocity = new Vector3(forwardVelocity.x, rb.velocity.y, forwardVelocity.z);
+                        }
+                        else if (leftJoystick.y < -0.2f) // Backward
+                        {
+                            Debug.Log("VR Left Joystick: Moving backward at speed: " + -forwardSpeed);
+                            Vector3 backwardVelocity = -transform.forward * forwardSpeed;
+                            rb.velocity = new Vector3(backwardVelocity.x, rb.velocity.y, backwardVelocity.z);
+                        }
+                        else
+                        {
+                            rb.velocity = new Vector3(0, rb.velocity.y, 0);
+                        }
+                    }
+                    else
+                    {
+                        rb.velocity = new Vector3(0, rb.velocity.y, 0);
+                    }
                 }
             }
-        
-            // Left controller: X (rotate left), Y (rotate right)
-            if (leftController.TryGetFeatureValue(CommonUsages.primaryButton, out bool xButton))
+                        
+            if (vrCamera != null && !isBraking)
             {
-                Debug.Log("X Button State: " + xButton);
-                if (xButton)
+                // Get the VR camera's Y rotation (head direction)
+                float headYaw = vrCamera.eulerAngles.y;
+                float excavatorYaw = transform.eulerAngles.y;
+                float yawDifference = Mathf.DeltaAngle(excavatorYaw, headYaw);
+                if (Mathf.Abs(yawDifference) > 5f) // Only rotate if the difference is more than 5 degrees
                 {
-                    Debug.Log("VR Left Controller X Button: Rotating left.");
-                    transform.Rotate(0, -rotationSpeed * Time.fixedDeltaTime, 0);
-                }
-            }
-            if (leftController.TryGetFeatureValue(CommonUsages.secondaryButton, out bool yButton))
-            {
-                Debug.Log("Y Button State: " + yButton);
-                if (yButton)
-                {
-                    Debug.Log("VR Left Controller Y Button: Rotating right.");
-                    transform.Rotate(0, rotationSpeed * Time.fixedDeltaTime, 0);
+                    float rotationAmount = Mathf.Sign(yawDifference) * headRotationSpeed * Time.fixedDeltaTime;
+                    transform.Rotate(0, rotationAmount, 0);
+                    Debug.Log("Head tracking: Rotating excavator by " + rotationAmount + " degrees (Yaw Difference: " + yawDifference + ")");
                 }
             }
         }
@@ -140,6 +168,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    /*
     void AlignToGround()
     {
         // Cast a ray downward from a very high position to ensure it hits the ground
@@ -161,4 +190,5 @@ public class PlayerMovement : MonoBehaviour
             rb.velocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
         }
     }
+    */
 }
