@@ -26,20 +26,16 @@ public class PlayerMovement : MonoBehaviour
         enabled = true;
         Debug.Log("PlayerMovement enabled: " + enabled);
 
-        // Disable Rigidbody gravity (we'll handle grounding manually)
         //rb.useGravity = false;
 
-        // Initial ground alignment
-        //AlignToGround();
+         //AlignToGround();
 
-        // Initialize VR controllers
         InitializeControllers();
     }
 
     void Update()
     {
-        // Reattempt controller initialization if not yet initialized
-        if (!controllersInitialized)
+         if (!controllersInitialized)
         {
             InitializeControllers();
         }
@@ -98,7 +94,6 @@ public class PlayerMovement : MonoBehaviour
             }
         }
 
-        // Check if the player is outside the ground bounds or falls below Y = -1
         Vector3 playerPos = rb.position;
         Debug.Log("Player position: " + playerPos);
         if (playerPos.y < -1 || playerPos.x < groundMinX || playerPos.x > groundMaxX || playerPos.z < groundMinZ || playerPos.z > groundMaxZ)

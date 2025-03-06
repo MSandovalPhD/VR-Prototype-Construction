@@ -2,8 +2,8 @@ using UnityEngine;
 
 public class StoragePlaceSpawner : MonoBehaviour
 {
-    public GameObject storagePlacePrefab; // The StoragePlace (white plane) prefab to spawn
-    public GameObject sampleArea; // The Sample object (with green hoardings)
+    public GameObject storagePlacePrefab; // Prefab to spawn
+    public GameObject sampleArea; // Green hoardings
     public float spawnRadius = 100f; // Radius around the origin to spawn the plane
     public float bufferZone = 5f; // Extra distance outside the Sample area to avoid spawning too close
 
@@ -66,10 +66,9 @@ public class StoragePlaceSpawner : MonoBehaviour
             {
                 collider = spawnedStoragePlace.AddComponent<BoxCollider>();
             }
-            collider.isTrigger = true;
-            // Set the collider size to match the plane (adjust based on your plane's dimensions)
-            collider.size = new Vector3(10f, 0.1f, 10f); // Example: 4x4 plane with 0.1 height
-            collider.center = new Vector3(0f, 0.05f, 0f); // Center slightly above the bottom
+            collider.isTrigger = true;  
+            collider.size = new Vector3(10f, 0.1f, 10f); 
+            collider.center = new Vector3(0f, 0.05f, 0f); 
             spawnedStoragePlace.tag = "WinArea";
         }
         else

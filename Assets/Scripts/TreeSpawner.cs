@@ -8,7 +8,7 @@ public class TreeSpawner : MonoBehaviour
     public GameObject sampleArea; // The area to exclude
     public int numberOfTrees = 2; // Number of trees to spawn
     public float spawnRadius = 100f; // Radius around the origin to spawn trees
-    public float bufferZone = 5f; // Extra distance outside the Sample area to avoid spawning too close
+    public float bufferZone = 5f; // Extra distance to avoid spawning too close
 
     private Bounds sampleBounds; // Bounding box of the Sample area
 
@@ -33,18 +33,16 @@ public class TreeSpawner : MonoBehaviour
     }
 
     void CalculateSampleBounds()
-    {
-        // Get all renderers in the Sample hierarchy to calculate the combined bounds
+    {        
         Renderer[] renderers = sampleArea.GetComponentsInChildren<Renderer>();
         if (renderers.Length == 0)
         {
             Debug.LogError("No renderers found in Sample Area!");
             return;
         }
-
-        // Initialize bounds with the first renderer
+        
         sampleBounds = renderers[0].bounds;
-        // Expand bounds to include all renderers
+        
         foreach (Renderer renderer in renderers)
         {
             sampleBounds.Encapsulate(renderer.bounds);
@@ -59,7 +57,7 @@ public class TreeSpawner : MonoBehaviour
         for (int i = 0; i < numberOfTrees; i++)
         {
             Vector3 spawnPosition = GetRandomSpawnPosition();
-            if (spawnPosition != Vector3.zero) // Check if a valid position was found
+            if (spawnPosition != Vector3.zero)
             {
                 // Adjust the spawn position to the ground height using a raycast
                 if (Physics.Raycast(spawnPosition + Vector3.up * 100f, Vector3.down, out RaycastHit hit, 200f))
@@ -81,14 +79,12 @@ public class TreeSpawner : MonoBehaviour
 
     Vector3 GetRandomSpawnPosition()
     {
-        int maxAttempts = 10; // Maximum attempts to find a valid position
+        int maxAttempts = 10; 
         for (int i = 0; i < maxAttempts; i++)
         {
-            // Generate a random position within the spawn radius
             Vector2 randomCircle = Random.insideUnitCircle * spawnRadius;
             Vector3 spawnPosition = new Vector3(randomCircle.x, 0, randomCircle.y);
 
-            // Check if the position is outside the Sample bounds
             if (!sampleBounds.Contains(spawnPosition))
             {
                 return spawnPosition;
