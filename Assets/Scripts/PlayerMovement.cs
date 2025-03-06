@@ -115,7 +115,7 @@ public class PlayerMovement : MonoBehaviour
                 float yawDifference = Mathf.DeltaAngle(excavatorYaw, headYaw);
                 if (Mathf.Abs(yawDifference) > 5f) // Only rotate if the difference is more than 5 degrees
                 {
-                    float rotationAmount = Mathf.Sign(yawDifference) * headRotationSpeed * Time.fixedDeltaTime;
+                    float rotationAmount = (- 1) *  Mathf.Sign(yawDifference) * headRotationSpeed * Time.fixedDeltaTime;
                     transform.Rotate(0, rotationAmount, 0);
                     Debug.Log("Head tracking: Rotating excavator by " + rotationAmount + " degrees (Yaw Difference: " + yawDifference + ")");
                 }

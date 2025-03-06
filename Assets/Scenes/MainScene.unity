@@ -1891,7 +1891,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 1928502858}
-  offset: {x: 0, y: 5, z: -15}
+  offset: {x: 0, y: 5, z: -5}
+  alignYawWithTarget: 1
 --- !u!114 &267537544
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1976,13 +1977,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 267537542}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1, y: 5, z: -15}
+  m_LocalRotation: {x: 0.08715578, y: 0, z: 0, w: 0.9961947}
+  m_LocalPosition: {x: 1, y: 5, z: -5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 10, y: 0, z: 0}
 --- !u!1 &271567591 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -4193837776337574712, guid: 0b4235c4d14581c4a936fcb0ba89e206, type: 3}
@@ -24354,6 +24355,8 @@ MonoBehaviour:
   rb: {fileID: 1928502855}
   forwardSpeed: 10
   rotationSpeed: 20
+  vrCamera: {fileID: 0}
+  headRotationSpeed: 50
 --- !u!65 &1928502854
 BoxCollider:
   m_ObjectHideFlags: 0
